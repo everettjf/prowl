@@ -21,7 +21,8 @@ struct AppearanceSettingsView: View {
             }
           }
           VStack(alignment: .leading, spacing: 4) {
-            Text("Terminal theming follows Ghostty config. Edit it in `~/.config/ghostty/config`.")
+            Text("Terminal theming follows Ghostty config. Edit it in `~/.config/ghostty/config`")
+            Text("For example, add the following line to `~/.config/ghostty/config`")
             Text("theme = light:Monokai Pro Light Sun,dark:Dimmed Monokai")
               .monospaced()
           }
