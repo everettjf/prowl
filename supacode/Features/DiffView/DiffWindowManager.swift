@@ -8,6 +8,7 @@ final class DiffWindowManager {
   let state = DiffWindowState()
   private var window: NSWindow?
   private var skipNextFocusRefresh = false
+  private var localEventMonitor: Any?
 
   private init() {}
 
@@ -32,10 +33,14 @@ final class DiffWindowManager {
     newWindow.identifier = NSUserInterfaceItemIdentifier("diff")
     newWindow.styleMask = [.titled, .closable, .miniaturizable, .resizable]
     newWindow.tabbingMode = .disallowed
+    newWindow.toolbarStyle = .unified
+    newWindow.toolbar = NSToolbar(identifier: "DiffToolbar")
     newWindow.isReleasedWhenClosed = false
-    newWindow.setContentSize(NSSize(width: 1000, height: 700))
     newWindow.minSize = NSSize(width: 600, height: 400)
-    newWindow.center()
+    if !newWindow.setFrameAutosaveName("DiffWindow") {
+      newWindow.setContentSize(NSSize(width: 1000, height: 700))
+      newWindow.center()
+    }
     newWindow.makeKeyAndOrderFront(nil)
 
     window = newWindow
@@ -46,6 +51,17 @@ final class DiffWindowManager {
       name: NSWindow.didBecomeKeyNotification,
       object: newWindow,
     )
+
+    localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+      guard let self, let window = self.window, window == event.window else { return event }
+      if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+        event.charactersIgnoringModifiers == "w"
+      {
+        window.performClose(nil)
+        return nil
+      }
+      return event
+    }
   }
 
   var hasChanges: Bool {

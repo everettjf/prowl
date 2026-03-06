@@ -3,6 +3,12 @@ import YiTong
 
 struct DiffWindowContentView: View {
   var state: DiffWindowState
+  @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
+  @AppStorage("diffViewStyle") private var diffStyleRaw = DiffStyle.split.rawValue
+
+  private var diffStyle: DiffStyle {
+    DiffStyle(rawValue: diffStyleRaw) ?? .split
+  }
 
   private var selectedFileID: Binding<String?> {
     Binding(
@@ -16,11 +22,40 @@ struct DiffWindowContentView: View {
   }
 
   var body: some View {
-    NavigationSplitView {
+    NavigationSplitView(columnVisibility: $columnVisibility) {
       fileListSidebar
         .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 400)
     } detail: {
       diffDetail
+    }
+    .focusedSceneValue(\.toggleLeftSidebarAction, toggleSidebar)
+    .toolbar(id: "diffToolbar") {
+      ToolbarItem(id: "sidebarToggle", placement: .navigation) {
+        Button {
+          toggleSidebar()
+        } label: {
+          Image(systemName: "sidebar.left")
+        }
+        .help("Toggle Sidebar (\(AppShortcuts.toggleLeftSidebar.display))")
+      }
+      ToolbarItem(id: "diffStyle", placement: .primaryAction) {
+        Picker("Diff Style", selection: $diffStyleRaw) {
+          Image(systemName: "square.split.2x1")
+            .tag(DiffStyle.split.rawValue)
+            .help("Split")
+          Image(systemName: "text.justify.left")
+            .tag(DiffStyle.unified.rawValue)
+            .help("Unified")
+        }
+        .pickerStyle(.segmented)
+        .help("Diff Style")
+      }
+    }
+  }
+
+  private func toggleSidebar() {
+    withAnimation {
+      columnVisibility = columnVisibility == .detailOnly ? .automatic : .detailOnly
     }
   }
 
@@ -55,7 +90,7 @@ struct DiffWindowContentView: View {
         DiffView(
           document: document,
           configuration: DiffConfiguration(
-            style: .split,
+            style: diffStyle,
             showsFileHeaders: false,
           ),
         )
