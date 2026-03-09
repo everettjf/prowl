@@ -49,7 +49,7 @@ struct CommandPaletteItem: Identifiable, Equatable {
     case .checkForUpdates, .openRepository, .openSettings, .newWorktree, .refreshWorktrees:
       return true
     case .ghosttyCommand:
-      return true
+      return false
     case .openPullRequest,
       .markPullRequestReady,
       .mergePullRequest,

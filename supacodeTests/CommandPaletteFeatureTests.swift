@@ -111,6 +111,30 @@ struct CommandPaletteFeatureTests {
     )
   }
 
+  @Test func emptyQueryHidesGhosttyCommands() {
+    let ghosttyItem = CommandPaletteItem(
+      id: "ghostty.goto_split:right|Focus Split Right",
+      title: "Focus Split Right",
+      subtitle: nil,
+      kind: .ghosttyCommand("goto_split:right")
+    )
+    let prAction = CommandPaletteItem(
+      id: "pr.open",
+      title: "Open PR on GitHub",
+      subtitle: "PR title",
+      kind: .openPullRequest("wt-1"),
+      priorityTier: 2
+    )
+
+    let result = CommandPaletteFeature.filterItems(
+      items: [ghosttyItem, prAction],
+      query: ""
+    )
+
+    #expect(!result.contains { $0.id == ghosttyItem.id })
+    #expect(result.contains { $0.id == prAction.id })
+  }
+
   @Test func commandPaletteItems_omitsSubActionsForMainWorktree() {
     let rootPath = "/tmp/repo"
     let main = makeWorktree(
@@ -595,6 +619,30 @@ struct CommandPaletteFeatureTests {
         now: now
       ),
       [recent, older]
+    )
+  }
+
+  @Test func supacodeItemsBeatGhosttyItemsWhenScoresTie() {
+    let supacodeItem = CommandPaletteItem(
+      id: "global.open-settings",
+      title: "Open Settings",
+      subtitle: nil,
+      kind: .openSettings
+    )
+    let ghosttyItem = CommandPaletteItem(
+      id: "ghostty.open-settings|Open Settings",
+      title: "Open Settings",
+      subtitle: nil,
+      kind: .ghosttyCommand("open_settings"),
+      priorityTier: CommandPaletteItem.defaultPriorityTier + 100
+    )
+
+    expectNoDifference(
+      CommandPaletteFeature.filterItems(
+        items: [ghosttyItem, supacodeItem],
+        query: "open settings"
+      ),
+      [supacodeItem, ghosttyItem]
     )
   }
 

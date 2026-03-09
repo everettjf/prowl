@@ -596,7 +596,8 @@ private func ghosttyCommandItems(_ commands: [GhosttyCommand]) -> [CommandPalett
       id: CommandPaletteItemID.ghosttyCommand(command),
       title: command.title,
       subtitle: subtitle.isEmpty ? nil : subtitle,
-      kind: .ghosttyCommand(command.action)
+      kind: .ghosttyCommand(command.action),
+      priorityTier: CommandPaletteItem.defaultPriorityTier + 100
     )
   }
 }
