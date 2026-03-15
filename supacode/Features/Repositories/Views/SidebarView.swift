@@ -141,6 +141,9 @@ struct SidebarView: View {
     state: RepositoriesFeature.State,
     visibleWorktreeIDs: Set<Worktree.ID>
   ) -> Set<SidebarSelection> {
+    if state.isShowingDashboard {
+      return [.dashboard]
+    }
     if state.isShowingArchivedWorktrees {
       return [.archivedWorktrees]
     }

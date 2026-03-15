@@ -16,10 +16,13 @@ struct SidebarListView: View {
     let selection = Binding<Set<SidebarSelection>>(
       get: {
         var nextSelections = sidebarSelections
-        if state.isShowingArchivedWorktrees {
+        if state.isShowingDashboard {
+          nextSelections = [.dashboard]
+        } else if state.isShowingArchivedWorktrees {
           nextSelections = [.archivedWorktrees]
         } else {
           nextSelections.remove(.archivedWorktrees)
+          nextSelections.remove(.dashboard)
           if let selectedWorktreeID = state.selectedWorktreeID {
             nextSelections.insert(.worktree(selectedWorktreeID))
           }
@@ -54,6 +57,12 @@ struct SidebarListView: View {
               }
               return true
             })
+        }
+
+        if nextSelections.contains(.dashboard) {
+          sidebarSelections = [.dashboard]
+          store.send(.selectDashboard)
+          return
         }
 
         if nextSelections.contains(.archivedWorktrees) {
@@ -172,6 +181,16 @@ struct SidebarListView: View {
       }
       if !isDragActive {
         isDragActive = true
+      }
+    }
+    .safeAreaInset(edge: .top) {
+      DashboardSidebarButton(
+        store: store,
+        isSelected: state.isShowingDashboard
+      )
+      .padding(.top, 4)
+      .overlay(alignment: .bottom) {
+        Divider()
       }
     }
     .safeAreaInset(edge: .bottom) {
