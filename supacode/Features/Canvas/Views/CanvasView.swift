@@ -162,11 +162,14 @@ struct CanvasView: View {
       ? gridColumns(for: positionedCount)
       : gridColumns(for: cardKeys.count)
 
+    // Build locally, assign once to trigger a single save.
+    var layouts = layoutStore.cardLayouts
     for (i, key) in unpositioned.enumerated() {
-      layoutStore.cardLayouts[key] = CanvasCardLayout(
+      layouts[key] = CanvasCardLayout(
         position: gridPosition(index: positionedCount + i, columns: columns)
       )
     }
+    layoutStore.cardLayouts = layouts
   }
 
   /// Balanced grid: columns ≈ sqrt(N). No viewport constraint — the canvas
@@ -198,60 +201,15 @@ struct CanvasView: View {
     var height = baseLayout.size.height
 
     if let resize = activeResize[tabID] {
-      let translationX = resize.translation.width
-      let translationY = resize.translation.height
-
-      switch resize.edge {
-      case .trailing:
-        let newW = clampWidth(width + translationX)
-        centerX += (newW - width) / 2
+      let (wSign, hSign) = resize.edge.resizeSigns
+      if wSign != 0 {
+        let newW = clampWidth(width + CGFloat(wSign) * resize.translation.width)
+        centerX += CGFloat(wSign) * (newW - width) / 2
         width = newW
-
-      case .leading:
-        let newW = clampWidth(width - translationX)
-        centerX -= (newW - width) / 2
-        width = newW
-
-      case .top:
-        let newH = clampHeight(height - translationY)
-        centerY -= (newH - height) / 2
-        height = newH
-
-      case .bottom:
-        let newH = clampHeight(height + translationY)
-        centerY += (newH - height) / 2
-        height = newH
-
-      case .topTrailing:
-        let newW = clampWidth(width + translationX)
-        let newH = clampHeight(height - translationY)
-        centerX += (newW - width) / 2
-        centerY -= (newH - height) / 2
-        width = newW
-        height = newH
-
-      case .topLeading:
-        let newW = clampWidth(width - translationX)
-        let newH = clampHeight(height - translationY)
-        centerX -= (newW - width) / 2
-        centerY -= (newH - height) / 2
-        width = newW
-        height = newH
-
-      case .bottomTrailing:
-        let newW = clampWidth(width + translationX)
-        let newH = clampHeight(height + translationY)
-        centerX += (newW - width) / 2
-        centerY += (newH - height) / 2
-        width = newW
-        height = newH
-
-      case .bottomLeading:
-        let newW = clampWidth(width - translationX)
-        let newH = clampHeight(height + translationY)
-        centerX -= (newW - width) / 2
-        centerY += (newH - height) / 2
-        width = newW
+      }
+      if hSign != 0 {
+        let newH = clampHeight(height + CGFloat(hSign) * resize.translation.height)
+        centerY += CGFloat(hSign) * (newH - height) / 2
         height = newH
       }
     }
@@ -288,11 +246,13 @@ struct CanvasView: View {
   private func organizeCards() {
     let keys = collectCardKeys(from: terminalManager.activeWorktreeStates)
     let columns = gridColumns(for: keys.count)
+    var layouts = layoutStore.cardLayouts
     for (index, key) in keys.enumerated() {
-      layoutStore.cardLayouts[key] = CanvasCardLayout(
+      layouts[key] = CanvasCardLayout(
         position: gridPosition(index: index, columns: columns)
       )
     }
+    layoutStore.cardLayouts = layouts
   }
 
   /// Adjust scale and offset so all cards fit within the viewport.
@@ -339,9 +299,12 @@ struct CanvasView: View {
   private func cleanStaleLayouts() {
     let visibleKeys = Set(collectCardKeys(from: terminalManager.activeWorktreeStates))
     let staleKeys = layoutStore.cardLayouts.keys.filter { !visibleKeys.contains($0) }
+    guard !staleKeys.isEmpty else { return }
+    var layouts = layoutStore.cardLayouts
     for key in staleKeys {
-      layoutStore.cardLayouts.removeValue(forKey: key)
+      layouts.removeValue(forKey: key)
     }
+    layoutStore.cardLayouts = layouts
   }
 
   private var organizeButton: some View {

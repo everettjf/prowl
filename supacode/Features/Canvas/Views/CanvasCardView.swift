@@ -18,6 +18,21 @@ struct CanvasCardView: View {
   enum CardResizeEdge {
     case leading, trailing, top, bottom
     case topLeading, topTrailing, bottomLeading, bottomTrailing
+
+    /// Sign multipliers for width and height during resize.
+    /// +1 = trailing/bottom grows, -1 = leading/top grows, 0 = no change.
+    var resizeSigns: (width: Int, height: Int) {
+      switch self {
+      case .leading: (-1, 0)
+      case .trailing: (1, 0)
+      case .top: (0, -1)
+      case .bottom: (0, 1)
+      case .topLeading: (-1, -1)
+      case .topTrailing: (1, -1)
+      case .bottomLeading: (-1, 1)
+      case .bottomTrailing: (1, 1)
+      }
+    }
   }
 
   private let titleBarHeight: CGFloat = 28
