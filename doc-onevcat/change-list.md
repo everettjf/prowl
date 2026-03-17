@@ -22,3 +22,12 @@
 | Wire up diff badge click in worktree row, `Cmd+]` shortcut, and Show Diff menu item. | `59dc4f6` | Fork only |
 | Preload all file contents on diff window open for instant file switching. | `5850576` | Fork only |
 | Add toolbar with sidebar toggle, diff style picker (split/unified), `Cmd+W` close, and window frame persistence. | `8985fc2` | Fork only |
+| Add Canvas (Live Sessions) feature: free-form view displaying all open tabs as draggable, resizable cards in a balanced grid layout with pinch-to-zoom (cursor-anchored), two-finger scroll panning, organize button, and fit-to-view on open. | `2c1d9aa`…`80df1b1` | Fork only |
+| Render full split pane layout in Canvas cards with `pinnedSize` propagation through the split tree to prevent terminal reflow during zoom. Enable resize handles on all four edges and corners. | `12496d5` | Fork only |
+| Show all open tabs (not just active) as separate cards in Canvas; per-tab layout, focus, resize, and occlusion management. | `e5992ea` | Fork only |
+| Fix Canvas grid layout: batch positioning to avoid overlap, stale layout cleanup, and organize/fit-to-view helpers. | `80df1b1`, `2653c06` | Fork only |
+| Add two-finger scroll to pan canvas via NSView scroll-wheel interception. | `2738c24` | Fork only |
+| Fix canvas pinch-to-zoom to anchor on cursor position instead of origin. | `c24e092` | Fork only |
+| Add PreToolUse hook to block `gh pr create` targeting upstream; PRs must explicitly target fork. | `9970560` | Fork only |
+| Add PR target rule to CLAUDE.md: always target `onevcat/supacode`, never upstream. | `962ba62` | Fork only |
+| Rebrand user-facing identity from Supacode to Prowl: app name, icon, bundle display name, settings file paths (`prowl.json`), subsystem identifiers, and about/UI strings. Keep module name as `supacode` for code compatibility. | `5f7d84a`…`5676418` | Fork only |
