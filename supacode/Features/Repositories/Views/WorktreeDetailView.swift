@@ -46,10 +46,11 @@ struct WorktreeDetailView: View {
     .toolbar(removing: .title)
     .toolbar {
       if repositories.isShowingCanvas {
-        ToolbarItem(placement: .navigation) {
+        ToolbarItem {
           Text("Canvas")
             .font(.headline)
         }
+        ToolbarSpacer(.flexible)
         ToolbarItem(placement: .primaryAction) {
           ToolbarNotificationsPopoverButton(
             groups: notificationGroups,
