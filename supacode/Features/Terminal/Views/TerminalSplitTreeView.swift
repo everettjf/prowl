@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 
 struct TerminalSplitTreeView: View {
   let tree: SplitTree<GhosttySurfaceView>
-  var pinnedSize: CGSize? = nil
+  var pinnedSize: CGSize?
   let action: (Operation) -> Void
 
   private static let dragType = UTType(exportedAs: "sh.supacode.ghosttySurfaceId")
@@ -37,7 +37,7 @@ struct TerminalSplitTreeView: View {
   struct SubtreeView: View {
     let node: SplitTree<GhosttySurfaceView>.Node
     var isRoot: Bool = false
-    var pinnedSize: CGSize? = nil
+    var pinnedSize: CGSize?
     let action: (Operation) -> Void
 
     var body: some View {
@@ -93,7 +93,7 @@ struct TerminalSplitTreeView: View {
   struct LeafView: View {
     let surfaceView: GhosttySurfaceView
     let isSplit: Bool
-    var pinnedSize: CGSize? = nil
+    var pinnedSize: CGSize?
     let action: (Operation) -> Void
 
     @State private var dropState: DropState = .idle
