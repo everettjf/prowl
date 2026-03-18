@@ -38,13 +38,12 @@ struct CanvasCardPackerTests {
     #expect(result.layouts.count == 5)
   }
 
-  // MARK: - Row wrapping
+  // MARK: - Row wrapping & compactness
 
-  @Test func picksClosestRatioForWidePlusNarrowCards() throws {
+  @Test func wideCardAloneWhenCompactnessWins() throws {
     // 1 wide + 2 narrow cards with 16:9 target.
-    // [wide+narrow1][narrow2] gives ratio ~1.25 (closer to 1.78)
-    // [wide][narrow1+narrow2] gives ratio ~0.87 (further from 1.78)
-    // So the algorithm correctly groups wide+narrow1 on the first row.
+    // [wide][narrow+narrow]: area=1.29M, ratio=0.87 → score wins (compact)
+    // [wide+narrow][narrow]: area=1.85M, ratio=1.25 → score loses (too spread)
     let cards = [
       card("wide", width: 960, height: 550),
       card("narrow1", width: 500, height: 550),
@@ -56,22 +55,19 @@ struct CanvasCardPackerTests {
     let narrow1 = try #require(result.layouts["narrow1"])
     let narrow2 = try #require(result.layouts["narrow2"])
 
-    // Wide and narrow1 share row 1, narrow2 is on row 2.
-    #expect(wide.position.y == narrow1.position.y)
-    #expect(narrow1.position.y < narrow2.position.y)
+    // Wide card alone on row 1, both narrow cards share row 2.
+    let wideBottom = wide.position.y + (wide.size.height + 28) / 2
+    let narrow1Top = narrow1.position.y - (narrow1.size.height + 28) / 2
+    #expect(narrow1Top >= wideBottom)
+    #expect(narrow1.position.y == narrow2.position.y)
   }
 
   @Test func wideCardAloneWhenNarrowCardsAreBroader() throws {
-    // When narrow cards' combined width exceeds the wide card, placing them
-    // on their own row gives a ratio closer to a near-square target.
     let cards = [
       card("wide", width: 800, height: 400),
       card("narrow1", width: 700, height: 400),
       card("narrow2", width: 700, height: 400),
     ]
-    // [wide][n1+n2]: width=max(840,1440)=1440, height=20+428+20+428+20=916, ratio=1.57
-    // [wide+n1][n2]: width=max(1560,740)=1560, height=916, ratio=1.70
-    // Target 1.5 → diff 0.07 vs 0.20; [wide][n1+n2] wins.
     let result = packer.pack(cards: cards, targetRatio: 1.5)
 
     let wide = try #require(result.layouts["wide"])
@@ -87,7 +83,6 @@ struct CanvasCardPackerTests {
 
   @Test func uniformCardsFormGrid() throws {
     // 4 equal cards with square target → should form 2×2 grid.
-    // Using 400-wide cards so the 2×2 ratio (0.94) beats 3-row configs (0.63).
     let cards = (0..<4).map { card("card\($0)", width: 400, height: 400) }
     let result = packer.pack(cards: cards, targetRatio: 1.0)
 
@@ -134,7 +129,7 @@ struct CanvasCardPackerTests {
 
   // MARK: - Aspect ratio targeting
 
-  @Test func resultRatioApproachesTarget() {
+  @Test func resultRatioIsReasonable() {
     let cards = [
       card("a", width: 700, height: 500),
       card("b", width: 500, height: 400),
@@ -148,7 +143,28 @@ struct CanvasCardPackerTests {
 
     guard result.boundingSize.height > 0 else { return }
     let actualRatio = result.boundingSize.width / result.boundingSize.height
-    #expect(actualRatio > targetRatio / 2 && actualRatio < targetRatio * 2)
+    // Combined scoring allows wider range — ratio doesn't have to be perfect.
+    #expect(actualRatio > 0.3 && actualRatio < 5.0)
+  }
+
+  // MARK: - Row centering
+
+  @Test func shorterRowIsCenteredWithinBoundingWidth() throws {
+    // Wide card on row 1, narrow card on row 2 → narrow row is centered.
+    let cards = [
+      card("wide", width: 1000, height: 400),
+      card("narrow", width: 400, height: 400),
+    ]
+    let result = packer.pack(cards: cards, targetRatio: 0.8)
+
+    let wide = try #require(result.layouts["wide"])
+    let narrow = try #require(result.layouts["narrow"])
+
+    // The narrow card's center should be at the bounding width's midpoint.
+    let boundingCenterX = result.boundingSize.width / 2
+    #expect(abs(narrow.position.x - boundingCenterX) < 1)
+    // Wide card is also centered (it IS the widest row).
+    #expect(abs(wide.position.x - boundingCenterX) < 1)
   }
 
   // MARK: - Edge cases

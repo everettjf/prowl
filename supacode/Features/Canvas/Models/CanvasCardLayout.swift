@@ -53,10 +53,16 @@ struct CanvasCardPacker {
   /// 2^(N-1) configurations — 2^19 ≈ 500K is still sub-millisecond.
   private static let exhaustiveLimit = 20
 
-  /// Pack cards into rows whose bounding aspect ratio best matches `targetRatio`.
+  /// How much aspect ratio mismatch penalizes the score relative to area.
+  /// A value of 0.25 means a ratio diff of 1.0 adds 25% to the area penalty.
+  /// This keeps layouts compact while avoiding extremely elongated shapes.
+  private static let ratioWeight: CGFloat = 0.25
+
+  /// Pack cards into rows that minimize the bounding area while gently
+  /// preferring aspect ratios close to `targetRatio`.
   ///
-  /// For up to 20 cards, every possible row-break configuration is evaluated
-  /// and the one whose bounding rectangle ratio is closest to `targetRatio` wins.
+  /// For up to 20 cards, every possible row-break configuration is evaluated.
+  /// Scoring: `area × (1 + ratioWeight × |ratio − targetRatio|)`.
   /// For larger counts, a greedy first-fit row packing with binary search is used.
   func pack(cards: [CardInfo], targetRatio: CGFloat) -> PackResult {
     guard !cards.isEmpty, targetRatio > 0 else {
@@ -71,23 +77,21 @@ struct CanvasCardPacker {
 
   // MARK: - Exhaustive search
 
-  /// Try every possible row-break configuration and pick the best ratio match.
+  /// Try every possible row-break configuration and pick the most compact layout.
   private func exhaustivePack(cards: [CardInfo], targetRatio: CGFloat) -> PackResult {
     let n = cards.count
     let maskCount = 1 << (n - 1)
     var bestMask = 0
-    var bestDiff = CGFloat.infinity
-    var bestArea = CGFloat.infinity
+    var bestScore = CGFloat.infinity
 
     for mask in 0..<maskCount {
       let (w, h) = boundingSize(cards: cards, breakMask: mask)
       let ratio = w / h
-      let diff = abs(ratio - targetRatio)
       let area = w * h
-      if diff < bestDiff || (diff == bestDiff && area < bestArea) {
-        bestDiff = diff
+      let score = area * (1 + Self.ratioWeight * abs(ratio - targetRatio))
+      if score < bestScore {
+        bestScore = score
         bestMask = mask
-        bestArea = area
       }
     }
 
@@ -119,6 +123,7 @@ struct CanvasCardPacker {
   }
 
   /// Build actual card layouts from a chosen row-break mask.
+  /// Rows are horizontally centered within the widest row's width.
   private func layoutFromMask(cards: [CardInfo], breakMask: Int) -> PackResult {
     var rows: [[Int]] = [[0]]
     for i in 1..<cards.count {
@@ -129,13 +134,20 @@ struct CanvasCardPacker {
       }
     }
 
+    // Compute each row's natural width and the overall max.
+    let rowWidths = rows.map { row -> CGFloat in
+      row.reduce(spacing) { $0 + cards[$1].size.width + spacing }
+    }
+    let maxRowWidth = rowWidths.max() ?? 0
+
+    // Lay out cards, centering each row within the bounding width.
     var layouts: [String: CanvasCardLayout] = [:]
     var y = spacing
-    var maxRowEndX: CGFloat = 0
 
-    for row in rows {
+    for (rowIndex, row) in rows.enumerated() {
       let rowHeight = row.map { cards[$0].size.height + titleBarHeight }.max() ?? 0
-      var x = spacing
+      let xOffset = (maxRowWidth - rowWidths[rowIndex]) / 2
+      var x = spacing + xOffset
 
       for idx in row {
         let card = cards[idx]
@@ -150,13 +162,12 @@ struct CanvasCardPacker {
         x += card.size.width + spacing
       }
 
-      maxRowEndX = max(maxRowEndX, x)
       y += rowHeight + spacing
     }
 
     return PackResult(
       layouts: layouts,
-      boundingSize: CGSize(width: maxRowEndX, height: y)
+      boundingSize: CGSize(width: maxRowWidth, height: y)
     )
   }
 
