@@ -401,6 +401,13 @@ struct CanvasView: View {
     let previousTabID = focusedTabID
     focusedTabID = tabID
 
+    // Sync the tab selection on the owning worktree so that exiting canvas
+    // (via toggleCanvas → selectWorktree) will focus the correct tab.
+    if let ownerState = states.first(where: { $0.surfaceView(for: tabID) != nil }) {
+      ownerState.tabManager.selectTab(tabID)
+      terminalManager.canvasFocusedWorktreeID = ownerState.worktreeID
+    }
+
     // Unfocus all surfaces in the previous card's split tree
     if let previousTabID, previousTabID != tabID,
       let previousState = states.first(where: { $0.surfaceView(for: previousTabID) != nil })

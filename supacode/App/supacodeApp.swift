@@ -138,6 +138,9 @@ struct SupacodeApp: App {
         },
         events: {
           terminalManager.eventStream()
+        },
+        canvasFocusedWorktreeID: {
+          terminalManager.canvasFocusedWorktreeID
         }
       )
       values.worktreeInfoWatcher = WorktreeInfoWatcherClient(
