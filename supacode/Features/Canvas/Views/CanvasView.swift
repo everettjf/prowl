@@ -437,11 +437,23 @@ struct CanvasView: View {
 
   private func activateCanvas() {
     cleanStaleLayouts()
-    for state in terminalManager.activeWorktreeStates {
+
+    let activeStates = terminalManager.activeWorktreeStates
+
+    // Auto-focus the card that was active before entering canvas.
+    if let selectedID = terminalManager.selectedWorktreeID,
+      let state = activeStates.first(where: { $0.worktreeID == selectedID }),
+      let tabID = state.tabManager.selectedTabId,
+      let surface = state.surfaceView(for: tabID)
+    {
+      focusCard(tabID, surfaceView: surface, states: activeStates)
+    }
+
+    for state in activeStates {
       state.setAllSurfacesOccluded()
     }
     // Un-occlude all surfaces visible on canvas (including split panes)
-    for state in terminalManager.activeWorktreeStates {
+    for state in activeStates {
       for tab in state.tabManager.tabs {
         for surface in state.splitTree(for: tab.id).leaves() {
           surface.setOcclusion(true)
